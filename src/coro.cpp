@@ -1,11 +1,27 @@
-// Copyright (c) 2013 Grigory Demchenko
+/*
+ * Copyright 2014 Grigory Demchenko (aka gridem)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 #include "coro.h"
-#include "defs.h"
+#include "helpers.h"
+
+#define CLOG(D_msg)                 LOG(coro::isInsideCoro() << ": " << D_msg)
 
 namespace coro {
 
-TLS Coro* t_coro;
+TLS Coro* t_coro = nullptr;
 const size_t STACK_SIZE = 1024*32;
 
 // switch context from coroutine
@@ -34,7 +50,8 @@ Coro::Coro(Handler handler)
 
 Coro::~Coro()
 {
-    VERIFY(!isStarted() || std::uncaught_exception(), "Destroying started coro");
+    if (isStarted())
+        RLOG("Destroying started coro");
 }
 
 void Coro::start(Handler handler)
@@ -69,7 +86,7 @@ void Coro::init0()
 // returns to saved context
 void Coro::yield0()
 {
-    boost::context::jump_fcontext(context, &savedContext, 0);
+    boost::context::jump_fcontext(&context, savedContext, 0);
 }
 
 void Coro::jump0(intptr_t p)
@@ -94,6 +111,7 @@ void Coro::starter0(intptr_t p)
     started = true;
     try
     {
+        exc = nullptr;
         Handler handler = std::move(*reinterpret_cast<Handler*>(p));
         handler();
     }
