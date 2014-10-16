@@ -19,7 +19,6 @@
 #include <iostream>
 #include <stdexcept>
 #include <thread>
-#include <atomic>
 #include <boost/date_time/posix_time/posix_time.hpp>
 
 #include "common.h"
@@ -52,12 +51,6 @@
 #else
 #   define TLS                      __thread
 #endif
-
-template<typename T>
-std::atomic<int>& atomic()
-{
-    return single<std::atomic<int>, T>();
-}
 
 #define WAIT_FOR(D_condition)       while (!(D_condition)) std::this_thread::yield()
 

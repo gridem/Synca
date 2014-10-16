@@ -148,7 +148,7 @@ size_t goAnyWait(std::initializer_list<Handler> handlers)
 
     size_t index = static_cast<size_t>(-1);
     deferProceed([&handlers, &index](Handler proceed) {
-        std::shared_ptr<std::atomic<int>> counter = std::make_shared<std::atomic<int>>();
+        std::shared_ptr<Atomic<int>> counter = std::make_shared<Atomic<int>>();
         size_t i = 0;
         for (const auto& handler: handlers)
         {

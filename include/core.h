@@ -87,7 +87,7 @@ boost::optional<T_result> goAnyResult(std::initializer_list<std::function<boost:
         }
         
     private:
-        std::atomic<int> counter;
+        Atomic<int> counter;
         ResultHandler proceed;
     };
 

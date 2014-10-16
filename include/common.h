@@ -18,6 +18,7 @@
 
 #include <string>
 #include <functional>
+#include <atomic>
 
 typedef std::string Buffer;
 typedef std::function<void ()> Handler;
@@ -32,5 +33,17 @@ T& single()
 {
     static T t;
     return t;
+}
+
+template<typename T>
+struct Atomic : std::atomic<T>
+{
+    Atomic(int v = 0) : std::atomic<T>(v) {}
+};
+
+template<typename T>
+std::atomic<int>& atomic()
+{
+    return single<Atomic<int>, T>();
 }
 
