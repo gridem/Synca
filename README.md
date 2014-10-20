@@ -328,9 +328,30 @@ go([&a] {
 waitForAll();
 ```
 
+Outputs:
+
+```
+tp#1: [1] started
+tp#1: [1] 1
+tp#1: [1] 2
+tp#2: [2] started
+tp#1: [1] 3
+tp#2: [2] A1
+tp#1: [1] teleport tp -> alone
+tp#2: [2] A2
+tp#2: [2] ended
+tp#1: [3] started
+tp#1: [3] B1
+tp#1: [3] B2
+tp#1: [3] ended
+tp#1: [1] 4
+tp#1: [1] ended
+```
+
 ## External Events Handling
 
 The library supports 2 types of external events handling:
+
 1. Timeouts. You may specify the timeout for the scoped set of operations.
 2. Cancels. User may cancel the coroutine at any time.
 
@@ -369,21 +390,16 @@ go([] {
 Outputs:
 
 ```
-tp#1: [1] started
-tp#1: [1] 1
-tp#1: [1] 2
-tp#2: [2] started
-tp#1: [1] 3
-tp#2: [2] A1
-tp#1: [1] teleport tp -> alone
-tp#2: [2] A2
-tp#2: [2] ended
-tp#1: [3] started
-tp#1: [3] B1
-tp#1: [3] B2
-tp#1: [3] ended
-tp#1: [1] 4
-tp#1: [1] ended
+40.438581: tp#3: [1] started
+40.440582: tp#2: [2] started
+40.443582: tp#3: [1] before sleep
+40.445582: tp#2: [2] before sleep
+40.645602: tp#3: [1] after sleep
+40.648602: tp#3: [1] after handle events
+40.651603: tp#2: [2] after sleep
+40.654603: tp#3: [1] ended
+40.656603: tp#2: [2] exception in coro: Journey event received: Timed out
+40.663604: tp#2: [2] ended
 ```
 
 ### Cancellation Handling
