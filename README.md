@@ -31,8 +31,10 @@ For more information you may read the articles:
 
 # Library Documentation
 This section provides the description of synca API.
-## Multithreaded Functionality
-The multithreaded layer describes the functionality operating with different threads and scheduling.
+
+## Multi-threaded Functionality
+The multi-threaded layer describes the functionality operating with different threads and scheduling.
+
 ### Scheduler
 Scheduler is responsible to schedule handlers for execution. Scheduler interface:
 ``` cpp
@@ -59,7 +61,9 @@ struct ThreadPool : IScheduler
 * `ThreadPool constructor`: creates thread pool using specified number of threads `threadCount` with corresponding `name`. `name` is intended for logging output only.
 * `schedule`: schedules `handler` in the available thread inside thread pool.
 * `wait`: blocks until all handlers complete their execution inside all threads.
+
 ## Basic Functionality
+
 ### go
 Executes specified handler asynchronously inside newly created coroutine using default scheduler. See later how to assign default scheduler.
 
@@ -69,6 +73,7 @@ go([] {
     std::cout << "Hello world!" << std::endl;
 });
 ```
+
 ### go Through Particular Scheduler
 Executes specified handler asynchronously inside newly created coroutine though particular scheduler. Scheduler must implement `IScheduler` interface.
 
@@ -79,7 +84,9 @@ go([] {
     std::cout << "Hello world!" << std::endl;
 }, tp);
 ```
+
 ## Waiting Functions
+
 ### goWait
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until all handlers complete.
 
@@ -170,7 +177,6 @@ struct Socket
 * `close` - closes the socket and terminates current executed operations.
 
 ### Acceptor
-
 Accepts the connects from the clients.
 ``` cpp
 typedef std::function<void(Socket&)> SocketHandler;
@@ -187,8 +193,8 @@ struct Acceptor
 * `goAccept` - syntax sugar to execute accepted client socket in new coroutine using `go`.
 
 ### Resolver
-
 Resolves DNS name.
+
 ``` cpp
 struct Resolver
 {
