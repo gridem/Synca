@@ -152,7 +152,6 @@ boost::optional<ResultType> handler()
     else
         return {};
 }
-
 ```
 
 **Example**
@@ -378,6 +377,61 @@ Goer op = go(myMegaHandler);
 // …
 If (weDontNeedMegaHandlerAnymore)
     op.cancel();
+```
+
+## Miscellaneous
+
+### Default Scheduler
+
+To specify default scheduler you should use the following:
+
+``` cpp
+ThreadPool tp(3, "tp");
+scheduler<DefaultTag>().attach(tp);
+```
+
+So the following lines become equivalent:
+
+``` cpp
+go(handler); // uses attached default ThreadPool
+go(handler, tp);
+```
+
+### Network Thread Pool
+
+To deal with the networking you must attach corresponding service via tag `NetworkTag`:
+
+``` cpp
+ThreadPool commonThreadPool(10, "cpu");
+ThreadPool networkThreadPool(1, "net");
+service<NetworkTag>().attach(networkThreadPool);
+scheduler<DefaultTag>().attach(commonThreadPool);
+go([] {
+    Socket socket; // uses attached network service
+    socket.connect("1.2.3.4", 1234);
+    Buffer buf = "hello world";
+    socket.write(buf);
+}); // uses attached default scheduler
+```
+
+### Timeout Thread Pool
+
+To deal with the timeout functionality you must attach corresponding service via tag `TimeoutTag`:
+
+``` cpp
+ThreadPool tp(3, "tp");
+service<TimeoutTag>().attach(tp);
+scheduler<DefaultTag>().attach(tp);
+go([] {
+    Timeout t(100); // uses attached timeout service
+    handleEvents();
+    JLOG("before sleep");
+    sleepFor(200);
+    JLOG("after sleep");
+    throw std::runtime_error("MY EXC");
+    handleEvents();
+    JLOG("after handle events");
+}); // uses attached default scheduler
 ```
 
 ## Simple Garbage Collector
