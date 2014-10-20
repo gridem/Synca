@@ -366,6 +366,26 @@ go([] {
 }, tp);
 ```
 
+Outputs:
+
+```
+tp#1: [1] started
+tp#1: [1] 1
+tp#1: [1] 2
+tp#2: [2] started
+tp#1: [1] 3
+tp#2: [2] A1
+tp#1: [1] teleport tp -> alone
+tp#2: [2] A2
+tp#2: [2] ended
+tp#1: [3] started
+tp#1: [3] B1
+tp#1: [3] B2
+tp#1: [3] ended
+tp#1: [1] 4
+tp#1: [1] ended
+```
+
 ### Cancellation Handling
 
 The user may cancel the coroutine at any time.
