@@ -171,6 +171,7 @@ void Journey::onExit0()
     else
     {
         Handler handler = std::move(deferHandler);
+        deferHandler = nullptr;
         handler();
     }
     t_journey = nullptr;
