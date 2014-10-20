@@ -35,8 +35,7 @@ This section provides the description of synca API.
 The multithreaded layer describes the functionality operating with different threads and scheduling.
 ### Scheduler
 Scheduler is responsible to schedule handlers for execution. Scheduler interface:
-```
-#!c++
+``` cpp
 typedef std::function<void ()> Handler;
 
 struct IScheduler : IObject
@@ -46,8 +45,7 @@ struct IScheduler : IObject
 };
 ```
 `ThreadPool` class implements this interface:
-```
-#!c++
+``` cpp
 struct ThreadPool : IScheduler
 {
     ThreadPool(size_t threadCount, const char* name = "");
@@ -66,8 +64,7 @@ struct ThreadPool : IScheduler
 Executes specified handler asynchronously inside newly created coroutine using default scheduler. See later how to assign default scheduler.
 
 **Example**
-```
-#!c++
+``` cpp
 go([] {
     std::cout << "Hello world!" << std::endl;
 });
@@ -76,8 +73,7 @@ go([] {
 Executes specified handler asynchronously inside newly created coroutine though particular scheduler. Scheduler must implement `IScheduler` interface.
 
 **Example**
-```
-#!c++
+``` cpp
 ThreadPool tp("tp");
 go([] {
     std::cout << "Hello world!" << std::endl;
@@ -88,8 +84,7 @@ go([] {
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until all handlers complete.
 
 **Example: Fibonacci numbers**
-```
-#!c++
+``` cpp
 int fibo(int v)
 {
     if (v < 2)
@@ -107,8 +102,7 @@ int fibo(int v)
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until at least one handler completes. Returns index of the triggered handler (started from 0)
 
 **Example**
-```
-#!c++
+``` cpp
 go([] {
     size_t i = goAnyWait({
         [] {
@@ -124,9 +118,7 @@ go([] {
 
 ### goAnyResult
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until at least one handler returns nonempty result. Returns the result of this handler. If all handlers don't return nonempty result then the returned result is empty. Handlers must use the following syntax:
-```
-#!c++
-
+``` cpp
 boost::optional<ResultType> handler()
 {
     // presudocode
@@ -139,9 +131,7 @@ boost::optional<ResultType> handler()
 ```
 
 **Example**
-```
-#!c++
-
+``` cpp
 boost::optional<std::string> result = goAnyResult<std::string>({
     [&key] {
         return portal<DiskCache>()->get(key);
@@ -159,9 +149,7 @@ Library provides basic networking support. All operations in this section are as
 ### Socket
 Provides asynchronous socket operations in synchronous manner.
 
-```
-#!c++
-
+``` cpp
 struct Socket
 {
     typedef /* unspecified type */ EndPoint;
@@ -184,9 +172,7 @@ struct Socket
 ### Acceptor
 
 Accepts the connects from the clients.
-```
-#!c++
-
+``` cpp
 typedef std::function<void(Socket&)> SocketHandler;
 struct Acceptor
 {
@@ -203,9 +189,7 @@ struct Acceptor
 ### Resolver
 
 Resolves DNS name.
-```
-#!c++
-
+``` cpp
 struct Resolver
 {
     Resolver();
@@ -224,9 +208,7 @@ This section provides the description of entities interacting with schedulers. T
 Switches the coroutine from one thread pool to another.
 
 **Example**
-```
-#!c++
-
+``` cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -243,9 +225,7 @@ Teleports to destination thread pool and automatically teleports back on scope e
 
 **Example 1**
 Portals with exception on-the-fly
-```
-#!c++
-
+``` cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -261,9 +241,7 @@ In this example the coroutine started in `tp1`, then switches to `tp2` during th
 **Example 2**
 
 Portals as an attached class method invocation.
-```
-#!c++
-
+``` cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -285,9 +263,7 @@ Alone is a non-blocking mutex.
 
 **Example**
 Executes sequentially several coroutines through `go`
-```
-#!c++
-
+``` cpp
 ThreadPool tp(3, "tp");
 Alone a(tp);
 go([&a] {
@@ -321,9 +297,7 @@ These events handle at the time of context switches i.e. on any asynchronous ope
 Allows to handle nested timeouts.
 
 **Example**
-```
-#!c++
-
+``` cpp
 ThreadPool tp(3, "tp");
 // need to attach to this service
 service<TimeoutTag>().attach(tp);
@@ -351,8 +325,7 @@ go([] {
 The user may cancel the coroutine at any time.
 
 **Example**
-```
-#!c++
+``` cpp
 Goer op = go(myMegaHandler);
 // …
 If (weDontNeedMegaHandlerAnymore)
@@ -364,9 +337,7 @@ If (weDontNeedMegaHandlerAnymore)
 Here is a simple garbage collector. Is collects only local allocations inside the coroutine.
 
 **Example**
-```
-#!c++
-
+``` cpp
 struct A   { ~A() { TLOG("~A"); } };
 struct B:A { ~B() { TLOG("~B"); } };
 struct C   { ~C() { TLOG("~C"); } };
