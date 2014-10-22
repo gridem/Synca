@@ -26,7 +26,6 @@ namespace client {
 using namespace mt;
 using namespace synca;
 
-// дисковый кеш
 struct DiskCache
 {
     boost::optional<std::string> get(const std::string& key)
@@ -41,7 +40,6 @@ struct DiskCache
     }
 };
 
-// кеш в памяти
 struct MemCache
 {
     boost::optional<std::string> get(const std::string& key)
@@ -63,22 +61,22 @@ struct Network
 {
     Network() : port(-1) {}
     
-    // получение объекта по сети
+    // gets the object from network
     std::string get(const std::string& key)
     {
         VERIFY(port > 0, "Port must be assigned");
         net::Socket socket;
         JLOG("connecting");
         socket.connect("127.0.0.1", port);
-        // первый байт - размер строки
+        // first byte is the string size
         Buffer sz(1, char(key.size()));
         socket.write(sz);
-        // затем - строка
+        // then the string itself
         socket.write(key);
-        // получаем размер результата
+        // gets the result size
         socket.read(sz);
         Buffer val(size_t(sz[0]), 0);
-        // получаем сам результат
+        // gets the actual result
         socket.read(val);
         JLOG("val received");
         return val;
@@ -91,7 +89,7 @@ struct UI : IScheduler
 {
     void schedule(Handler handler)
     {
-        // эмуляция шедулинга: запуск действий в новом потоке
+        // scheduler emulation: executes handler in separate thread
         struct UIScheduleTag;
         createThread(handler, atomic<UIScheduleTag>() ++, name()).detach();
     }
@@ -107,10 +105,10 @@ struct UI : IScheduler
             // to implement wait correctly
             ++ atomic<UI>();
             
-            // timeout для всех операций: 1с
+            // timeout for all operations: 1s
             Timeout t(1000);
             std::string val;
-            // получить результат из кешей параллельно
+            // gets the results from caches parallel
             boost::optional<std::string> result = goAnyResult<std::string>({
                 [&key] {
                     return portal<DiskCache>()->get(key);
@@ -120,24 +118,24 @@ struct UI : IScheduler
             });
             if (result)
             {
-                // результат найден
+                // the result has been found
                 val = std::move(*result);
                 JLOG("cache val: " << val);
             }
             else
             {
-                // кеши не содержат результата
-                // получаем объект по сети
+                // caches don't contain the result
+                // loading object from network
                 {
-                    // таймаут на сетевую обработку: 0.5с
+                    // network timeout: 0.5s
                     Timeout tNet(500);
                     val = portal<Network>()->get(key);
                 }
                 JLOG("net val: " << val);
-                // начиная с этого момента и до конца блока
-                // отмена (и таймауты) отключены
+                // starting from this point
+                // external events are disabled
                 EventsGuard guard;
-                // параллельно записываем в оба кеша
+                // writing the data parallel
                 goWait({
                     [&key, &val] {
                         portal<DiskCache>()->set(key, val);
@@ -147,7 +145,7 @@ struct UI : IScheduler
                 });
                 JLOG("cache updated");
             }
-            // переходим в UI и обрабатываем результат
+            // switches to UI thread to handle it
             portal<UI>()->handleResult(key, val);
         });
     }
@@ -187,32 +185,32 @@ void perform(int port)
 {
     single<Network>().port = port;
     
-    // создаем пул потоков для общих действий
+    // creates thread pool for common tasks
     ThreadPool cpu(3, "cpu");
-    // создаем пул потоков для сетевых действий
+    // creates thread pool for network operations
     ThreadPool net(2, "net");
     
-    // шедулер для сериализации действий с диском
+    // scheduler to serialize disk actions
     Alone diskStorage(cpu, "disk storage");
-    // шедулер для сериализации действий с памятью
+    // scheduler to serialize memory actions
     Alone memStorage(cpu, "mem storage");
     
-    // задание шедулера по умолчанию
+    // sets the default scheduler
     scheduler<DefaultTag>().attach(cpu);
-    // привязка сетевого сервиса к сетевому пулу
+    // attaches network service to network thread pool
     service<NetworkTag>().attach(net);
-    // привязка обработки таймаутов к общему пулу
+    // attaches timeout service to common thread pool
     service<TimeoutTag>().attach(cpu);
     
-    // привязка дискового портала к дисковому шедулеру
+    // attaches disk cache portal to disk scheduler
     portal<DiskCache>().attach(diskStorage);
-    // привязка портала памяти к шедулеру
+    // attaches memory cache portal to memory scheduler
     portal<MemCache>().attach(memStorage);
-    // привязка сетевого портала к сетевому пулу
+    // attaches network portal to network scheduler
     portal<Network>().attach(net);
     
     UI& ui = single<UI>();
-    // привязка UI портала к UI шедулеру
+    // attaches UI portal to UI scheduler
     portal<UI>().attach(ui);
     
     ui.performHandleKey("Hello");
