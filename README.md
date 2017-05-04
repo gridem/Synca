@@ -1,48 +1,54 @@
-Synca
-=====
+# Synca
 
-# Description
+## Description
 
-Synca is a small but efficient library to perform asynchronous operations in synchronous manner (async -> synca). This significantly simplifies the writing of network applications or other nontrivial concurrent algorithms. This library demonstrates how using the coroutines allows to achieve described simplifications. The code itself looks like synchronous invocations while internally it uses asynchronous scheduling.
+Synca is a small but efficient library to perform asynchronous operations in synchronous manner ("async" -> "synca"). The approach significantly simplifies the writing of effective IO and CPU intensive applications or other nontrivial concurrent algorithms. The library demonstrates how using the coroutines allows achieving described simplifications. The code itself looks like synchronous invocations while internally it uses asynchronous scheduling.
 
 ## Features
 
-1. Thread Pools. You can use different pools for different purposes.
-2. Asynchronous mutexes aka Alone. So called non-blocking mutexes.
-3. Teleports and Portals. To transfer execution context across different thread pools.
-4. Basic network support.
-5. Different waiting primitives to implement scatter-gather algorithms.
+1. Thread Pools. Different pools for different purposes are ready to use.
+2. Asynchronous mutexes aka `Alone`, so called non-blocking deadlock-free synchronization.
+3. `Teleport` and `Portal`. Provides the possibility to transfer execution context between different thread pools or schedulers.
+4. Basic asynchronous networking support.
+5. Several useful waiting primitives to implement scatter-gather algorithms.
 6. Non-blocking asynchronous channels.
-7. Other interesting things.
+7. Other interesting stuff.
 
-Some of the ideas was inspired by Go language.
+Some of the ideas was inspired by go language.
 
 For more information you may read the articles:
 
-1. [Asynchronous: back to the future](http://habrahabr.ru/post/201826/) (in Russian).
-2. [Asynchronous 2: teleportation through the portals](http://habrahabr.ru/company/yandex/blog/240525/) (in Russian).
+*In English*:
 
-# Requirements
+1. [Asynchronous Programming: Back to the Future](http://kukuruku.co/hub/cpp/asynchronous-programming-back-to-the-future).
+2. [Asynchronous Programming Part 2: Teleportation through Portals](http://kukuruku.co/hub/cpp/asynchronous-programming-part-2-teleportation-through-portals).
 
-* Supported compilers (must support c++11):
-    * GCC
-    * Clang
-    * MSVC (2013 CTP1)
-* Libraries: BOOST, version >= 1.56
+*In Russian*
 
-# Library Documentation
+1. [Asynchrony: Back to the Future](http://habrahabr.ru/post/201826/).
+2. [Asynchrony 2: Teleportation through Portals](http://habrahabr.ru/company/yandex/blog/240525/).
+
+## Requirements
+
+- Supported compilers (must support C++11):
+    - GCC
+    - Clang
+    - MSVC 2015
+- Libraries: BOOST, version >= 1.56
+
+## Library Documentation
 
 This section provides the description of synca API.
 
-## Multi-threaded Functionality
+### Multi-threaded Functionality
 
 The multi-threaded layer describes the functionality operating with different threads and scheduling.
 
-### Scheduler
+#### Scheduler
 
 Scheduler is responsible to schedule handlers for execution. Scheduler interface:
 
-``` cpp
+```cpp
 typedef std::function<void ()> Handler;
 
 struct IScheduler : IObject
@@ -54,7 +60,7 @@ struct IScheduler : IObject
 
 `ThreadPool` class implements this interface:
 
-``` cpp
+```cpp
 struct ThreadPool : IScheduler
 {
     ThreadPool(size_t threadCount, const char* name = "");
@@ -66,46 +72,46 @@ struct ThreadPool : IScheduler
 };
 ```
 
-* `ThreadPool constructor`: creates thread pool using specified number of threads `threadCount` with corresponding `name`. `name` is intended for logging output only.
-* `schedule`: schedules `handler` in the available thread inside thread pool.
-* `wait`: blocks until all handlers complete their execution inside all threads.
+- `ThreadPool constructor`: creates thread pool using specified number of threads `threadCount` with corresponding `name`. `name` is intended for logging output only.
+- `schedule`: schedules `handler` in the available thread inside thread pool.
+- `wait`: blocks until all handlers complete their execution inside all threads.
 
-## Basic Functionality
+### Basic Functionality
 
-### go
+#### go
 
 Executes specified handler asynchronously inside newly created coroutine using default scheduler. See later how to assign default scheduler.
 
 **Example**
 
-``` cpp
+```cpp
 go([] {
     std::cout << "Hello world!" << std::endl;
 });
 ```
 
-### go Through Particular Scheduler
+#### go Through Particular Scheduler
 
 Executes specified handler asynchronously inside newly created coroutine though particular scheduler. Scheduler must implement `IScheduler` interface.
 
 **Example**
 
-``` cpp
+```cpp
 ThreadPool tp("tp");
 go([] {
     std::cout << "Hello world!" << std::endl;
 }, tp);
 ```
 
-## Waiting Functions
+### Waiting Functions
 
-### goWait
+#### goWait
 
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until all handlers complete.
 
 **Example: Fibonacci numbers**
 
-``` cpp
+```cpp
 int fibo(int v)
 {
     if (v < 2)
@@ -119,13 +125,13 @@ int fibo(int v)
 }
 ```
 
-### goAnyWait
+#### goAnyWait
 
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until at least one handler completes. Returns index of the triggered handler (started from 0)
 
 **Example**
 
-``` cpp
+```cpp
 go([] {
     size_t i = goAnyWait({
         [] {
@@ -139,11 +145,11 @@ go([] {
 });
 ```
 
-### goAnyResult
+#### goAnyResult
 
 Executes specified list of handlers asynchronously inside newly created coroutines using default scheduler and waits until at least one handler returns nonempty result. Returns the result of this handler. If all handlers don't return nonempty result then the returned result is empty. Handlers must use the following syntax:
 
-``` cpp
+```cpp
 boost::optional<ResultType> handler()
 {
     // presudocode
@@ -156,7 +162,7 @@ boost::optional<ResultType> handler()
 
 **Example**
 
-``` cpp
+```cpp
 boost::optional<std::string> result = goAnyResult<std::string>({
     [&key] {
         return portal<DiskCache>()->get(key);
@@ -168,15 +174,15 @@ if (result)
     processReturnedKey(*result);
 ```
 
-## Networking Support
+### Networking Support
 
 Library provides basic networking support. All operations in this section are asynchronous and don't block the thread.
 
-### Socket
+#### Socket
 
 Provides asynchronous socket operations in synchronous manner.
 
-``` cpp
+```cpp
 struct Socket
 {
     typedef /* unspecified type */ EndPoint;
@@ -191,17 +197,17 @@ struct Socket
 };
 ```
 
-* `read` - reads data from socket using buffer size.
-* `partialRead` - reads available data from socket using buffer size. The amount of buffer data will less or equal to the initial buffer size.
-* `write` - writes the whole buffer data to the socket.
-* `connect` - connects to the server using specified ip, port or endpoint from `Resolver`.
-* `close` - closes the socket and terminates current executed operations.
+- `read` - reads data from socket using buffer size.
+- `partialRead` - reads available data from socket using buffer size. The amount of buffer data will less or equal to the initial buffer size.
+- `write` - writes the whole buffer data to the socket.
+- `connect` - connects to the server using specified ip, port or endpoint from `Resolver`.
+- `close` - closes the socket and terminates current executed operations.
 
-### Acceptor
+#### Acceptor
 
 Accepts the connects from the clients.
 
-``` cpp
+```cpp
 typedef std::function<void(Socket&)> SocketHandler;
 struct Acceptor
 {
@@ -212,15 +218,15 @@ struct Acceptor
 };
 ```
 
-* `Acceptor::Acceptor` - listens the connects on specified port.
-* `accept` - waits until client connects to the acceptor port.
-* `goAccept` - syntax sugar to execute accepted client socket in new coroutine using `go`.
+- `Acceptor::Acceptor` - listens the connects on specified port.
+- `accept` - waits until client connects to the acceptor port.
+- `goAccept` - syntax sugar to execute accepted client socket in new coroutine using `go`.
 
-### Resolver
+#### Resolver
 
 Resolves DNS name.
 
-``` cpp
+```cpp
 struct Resolver
 {
     Resolver();
@@ -230,19 +236,19 @@ struct Resolver
 };
 ```
 
-* `resolve` - resolves the hostname and returns the `Endpoint` iterator: `Endpoints`.
+- `resolve` - resolves the hostname and returns the `Endpoint` iterator: `Endpoints`.
 
-## Interactions With Different Schedulers
+### Interactions With Different Schedulers
 
 This section provides the description of entities interacting with schedulers. This allows to decouple the entire system and provides non-blocking synchronization.
 
-### Teleports
+#### Teleports
 
 Switches the coroutine from one thread pool to another.
 
 **Example**
 
-``` cpp
+```cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -254,7 +260,7 @@ go([&tp2] {
 waitForAll();
 ```
 
-### Portals
+#### Portals
 
 Teleports to destination thread pool and automatically teleports back on scope exit. Uses RAII idiom.
 
@@ -262,7 +268,7 @@ Teleports to destination thread pool and automatically teleports back on scope e
 
 Portals with exception on-the-fly
 
-``` cpp
+```cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -279,7 +285,7 @@ In this example the coroutine started in `tp1`, then switches to `tp2` during th
 
 Portals as an attached class method invocation.
 
-``` cpp
+```cpp
 ThreadPool tp1(1, "tp1");
 ThreadPool tp2(1, "tp2");
 
@@ -297,7 +303,7 @@ waitForAll();
 
 In this example class `X` attached to `tp2` using the portal's functionality. On `op` method invocation coroutine automagically teleports to `tp2`. When method `op` ends, portal switches back to `tp1`, automagically as well.
 
-### Alone
+#### Alone
 
 Alone is a non-blocking mutex.
 
@@ -305,7 +311,7 @@ Alone is a non-blocking mutex.
 
 Executes sequentially several coroutines through `go`
 
-``` cpp
+```cpp
 ThreadPool tp(3, "tp");
 Alone a(tp);
 go([&a] {
@@ -348,7 +354,7 @@ tp#1: [1] 4
 tp#1: [1] ended
 ```
 
-## External Events Handling
+### External Events Handling
 
 The library supports 2 types of external events handling:
 
@@ -357,13 +363,13 @@ The library supports 2 types of external events handling:
 
 These events handle at the time of context switches i.e. on any asynchronous operation. To provide more responsiveness user may add `handleEvents()` function call to check for external event existent. If there is such event the function `handleEvents` throws appropriate exception (or any asynchronous function call including networking and waiting functionality). The exception can be handled later using `try`/`catch` statements.
 
-### Timeouts Handling
+#### Timeouts Handling
 
 Allows to handle nested timeouts.
 
 **Example**
 
-``` cpp
+```cpp
 ThreadPool tp(3, "tp");
 // need to attach to this service
 service<TimeoutTag>().attach(tp);
@@ -402,42 +408,42 @@ Outputs:
 40.663604: tp#2: [2] ended
 ```
 
-### Cancellation Handling
+#### Cancellation Handling
 
 The user may cancel the coroutine at any time.
 
 **Example**
 
-``` cpp
+```cpp
 Goer op = go(myMegaHandler);
 // …
 If (weDontNeedMegaHandlerAnymore)
     op.cancel();
 ```
 
-## Miscellaneous
+### Miscellaneous
 
-### Default Scheduler
+#### Default Scheduler
 
 To specify default scheduler you should use the following:
 
-``` cpp
+```cpp
 ThreadPool tp(3, "tp");
 scheduler<DefaultTag>().attach(tp);
 ```
 
 So the following lines become equivalent:
 
-``` cpp
+```cpp
 go(handler); // uses attached default ThreadPool
 go(handler, tp);
 ```
 
-### Network Thread Pool
+#### Network Thread Pool
 
 To deal with the networking you must attach corresponding service via tag `NetworkTag`:
 
-``` cpp
+```cpp
 ThreadPool commonThreadPool(10, "cpu");
 ThreadPool networkThreadPool(1, "net");
 service<NetworkTag>().attach(networkThreadPool);
@@ -450,11 +456,11 @@ go([] {
 }); // uses attached default scheduler
 ```
 
-### Timeout Thread Pool
+#### Timeout Thread Pool
 
 To deal with the timeout functionality you must attach corresponding service via tag `TimeoutTag`:
 
-``` cpp
+```cpp
 ThreadPool tp(3, "tp");
 service<TimeoutTag>().attach(tp);
 scheduler<DefaultTag>().attach(tp);
@@ -470,13 +476,13 @@ go([] {
 }); // uses attached default scheduler
 ```
 
-## Simple Garbage Collector
+### Simple Garbage Collector
 
 Here is a simple garbage collector. Is collects only local allocations inside the coroutine.
 
 **Example**
 
-``` cpp
+```cpp
 struct A   { ~A() { TLOG("~A"); } };
 struct B:A { ~B() { TLOG("~B"); } };
 struct C   { ~C() { TLOG("~C"); } };
